@@ -6,7 +6,7 @@ from scipy.fft import fft, fftfreq
 from sklearn.metrics import mean_squared_error
 
 # === Параметры ===
-filename = r'C:\Users\tsura\PycharmProjects\PNI_PC\test_with_defect\U_PD5_with_defect.csv'
+filename = r'/test_with_defect/U_PD5_with_defect.csv'
 skip_rate = 100  # больше данных после downsampling
 train_limit = 150000  # чтобы хватало строк даже после skip
 history = 200  # вместо 1000

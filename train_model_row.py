@@ -1,8 +1,9 @@
-# train_model.py
+# train_model_row.py
 import pandas as pd
 import glob
 from catboost import CatBoostClassifier
 import joblib
+# Обучение модели главное
 
 # === 1. ЗАГРУЗКА И ОБЪЕДИНЕНИЕ CSV-ФАЙЛОВ ===
 train_files = glob.glob("train_with_defect/*.csv")

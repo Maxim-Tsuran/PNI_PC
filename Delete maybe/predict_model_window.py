@@ -14,7 +14,7 @@ model = joblib.load('catboost_defect_predictor_with_window.cbm')
 
 # === 2. ПОИСК CSV-ФАЙЛОВ ДЛЯ ПРЕДСКАЗАНИЯ ===
 predict_files = glob.glob("test_with_defect/*.csv")
-output_folder = "predicted"
+output_folder = "predicted_row"
 os.makedirs(output_folder, exist_ok=True)
 
 # === ДЛЯ ОБЩЕЙ ROC-КРИВОЙ ===

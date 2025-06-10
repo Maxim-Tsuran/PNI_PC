@@ -76,7 +76,7 @@ print("Модель сохранена: catboost_defect_predictor.cbm")
 predict_files = glob.glob("test_with_defect/*.csv")
 
 # Папка для сохранения результатов (может быть любой)
-output_folder = "predicted"
+output_folder = "predicted_row"
 
 # Для каждого файла:
 for file in predict_files:

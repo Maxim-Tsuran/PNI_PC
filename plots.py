@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-# Графики для тестовых данных
+# Графики для тестовых данных row_plots.png
 project_folder = os.getcwd()
 folder_path = 'test_with_defect'  # Укажите путь к вашей папке
 csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]

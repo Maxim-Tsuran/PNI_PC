@@ -3,11 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from catboost import CatBoostRegressor
 
+
+
 # === НАСТРОЙКИ ===
-INPUT_FILE = r'C:\Users\tsura\PycharmProjects\PNI_PC\test_with_defect\U_PD5_with_defect.csv'
+INPUT_FILE = r'/test_with_defect/U_PD5_with_defect.csv'
 HISTORY_SIZE = 1000                  # количество предыдущих значений для предсказания
 TRAIN_SIZE = 150000                  # сколько строк использовать для обучения
-MODEL_PATH = 'catboost_pd_regression_predictor.cbm'
+MODEL_PATH = '../catboost_pd_regression_predictor.cbm'
 
 # === 1. ЗАГРУЗКА ДАННЫХ ===
 df = pd.read_csv(INPUT_FILE)
