@@ -9,7 +9,7 @@ from sklearn.metrics import roc_curve, auc
 import numpy as np
 
 # === 1. ЗАГРУЗКА НОВОЙ МОДЕЛИ ===
-MODEL_PATH = 'catboost_defect_predictor_mean_amplitude.cbm'
+MODEL_PATH = 'catboost_mean_amplitude_model.cbm'
 model = joblib.load(MODEL_PATH)
 
 # === 2. НАСТРОЙКА ПУТЕЙ ===

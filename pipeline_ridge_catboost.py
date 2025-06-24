@@ -1,16 +1,16 @@
-# predict_arima_catboost.py
+# predict_linear_regression_catboost.py
 import pandas as pd
 import numpy as np
 import os
 import joblib
 import matplotlib.pyplot as plt
-from pmdarima import auto_arima
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 
 # Конфигурация
 INPUT_FOLDER = "test_with_mean_amplitude_and_defect"
-OUTPUT_FOLDER = "arima_catboost_predictions"  # Новая папка для результатов
-MODEL_PATH = "catboost_defect_predictor_mean_amplitude.cbm"
+OUTPUT_FOLDER = "linear_regression_catboost_predictions"  # Новая папка для результатов
+MODEL_PATH = "catboost_mean_amplitude_model.cbm"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # Параметры обработки
@@ -37,30 +37,26 @@ for file in os.listdir(INPUT_FOLDER):
     print(f"Обучающих точек: {len(train_df)}")
     print(f"Прогнозируемых точек: {len(test_df)}")
 
-    # Подготовка и очистка данных для ARIMA
-    arima_train_data = train_df['Mean_Amplitude'].replace([np.inf, -np.inf], np.nan).dropna()
+    # Подготовка данных для Линейной Регрессии
+    # X - это время, y - это средняя амплитуда
+    X_train = train_df[['Time']].values
+    y_train = train_df['Mean_Amplitude'].values
 
-    # Обучаем модель ARIMA с автоматическим подбором параметров
+    # Обучаем простую модель Линейной Регрессии
     try:
-        model_arima = auto_arima(
-            arima_train_data,
-            start_p=1, start_q=1,
-            max_p=5, max_q=5,
-            seasonal=False,  # Отключаем сезонность
-            d=1,             # Порядок интегрирования, обычно 1 для трендовых данных
-            trace=True,
-            error_action='ignore',
-            suppress_warnings=True,
-            stepwise=True      # Ускоряет подбор параметров
-        )
-        print("Параметры ARIMA:", model_arima.summary())
+        model_lr = LinearRegression()
+        model_lr.fit(X_train, y_train)
 
-        # Прогнозируем на всю длину тестовой выборки
-        y_pred_ma = model_arima.predict(n_periods=len(test_df))
+        # Прогнозируем на временных метках тестовой выборки
+        X_test = test_df[['Time']].values
+        y_pred_ma = model_lr.predict(X_test)
+
+        # Убедимся, что прогноз не уходит в отрицательные значения
+        y_pred_ma[y_pred_ma < 0] = 0
 
     except Exception as e:
-        print(f"Ошибка при обучении ARIMA: {e}")
-        # В случае ошибки, экстраполируем последнее значение
+        print(f"Ошибка при обучении Линейной Регрессии: {e}")
+        # В случае ошибки, экстраполируем последнее известное значение
         y_pred_ma = np.full(len(test_df), train_df['Mean_Amplitude'].iloc[-1])
 
     # Формирование полного временного ряда
@@ -98,21 +94,21 @@ for file in os.listdir(INPUT_FOLDER):
     result_df.to_csv(output_path, index=False)
     print(f"Результаты сохранены в {output_path}")
 
-    # Визуализация 1: Прогноз ARIMA
+    # Визуализация 1: Прогноз Линейной Регрессии
     plt.figure(figsize=(16, 8))
     plt.plot(train_df['Time'], train_df['Mean_Amplitude'], 'b-', label='Исторические данные', alpha=0.7)
     plt.plot(test_df['Time'], test_df['Mean_Amplitude'], 'g.', label='Реальные значения (будущее)', markersize=4, alpha=0.6)
-    plt.plot(test_df['Time'], y_pred_ma, 'r--', label='Прогноз ARIMA', linewidth=2)
+    plt.plot(test_df['Time'], y_pred_ma, 'r--', label='Прогноз (Линейная Регрессия)', linewidth=2)
     plt.axvline(x=test_df['Time'].iloc[0], color='k', linestyle='--', label='Начало прогноза')
-    plt.title(f'Прогноз ARIMA для {file}')
+    plt.title(f'Прогноз Линейной Регрессии для {file}')
     plt.xlabel('Время')
     plt.ylabel('Средняя амплитуда')
     plt.legend()
     plt.grid(True, alpha=0.3)
-    plot_path1 = os.path.join(OUTPUT_FOLDER, f"arima_{file.replace('.csv', '.png')}")
+    plot_path1 = os.path.join(OUTPUT_FOLDER, f"linear_regression_{file.replace('.csv', '.png')}")
     plt.savefig(plot_path1, dpi=200, bbox_inches='tight')
     plt.close()
-    print(f"График ARIMA сохранен: {plot_path1}")
+    print(f"График Линейной Регрессии сохранен: {plot_path1}")
 
     # Визуализация 2: Прогноз дефекта
     plt.figure(figsize=(16, 8))
@@ -145,5 +141,74 @@ for file in os.listdir(INPUT_FOLDER):
     plt.savefig(plot_path2, dpi=200, bbox_inches='tight')
     plt.close()
     print(f"График дефекта сохранен: {plot_path2}")
+
+    # === Новый блок: сравнение времени наступления дефекта ===
+
+    # 1. Поиск времени реального дефекта
+    real_defect = np.concatenate([train_df['Defect'].values, test_df['Defect'].values])
+    real_defect_idx = np.where(real_defect == 1)[0]
+    if len(real_defect_idx) == 0:
+        real_defect_time = None
+        print("В файле не найдено реальное наступление дефекта.")
+    else:
+        real_defect_time = full_time[real_defect_idx[0]]
+
+    # 2. Поиск времени предсказанного дефекта (по уставке подряд идущих единиц)
+    min_consecutive = 40  # Подберите под задачу
+    pred = predictions
+    pred_defect_time = None
+    count = 0
+    for i in range(len(pred)):
+        if pred[i] == 1:
+            count += 1
+            if count == min_consecutive:
+                pred_defect_time = full_time[i - min_consecutive + 1]
+                break
+        else:
+            count = 0
+
+    # 3. Визуализация сравнения дефектов
+    plt.figure(figsize=(14, 4))
+    plt.plot(full_time, real_defect, label='Истинный дефект', drawstyle='steps-post', color='green', linewidth=2)
+    plt.plot(full_time, pred, label='Предсказанный дефект', drawstyle='steps-post', color='red', alpha=0.7, linewidth=2)
+
+    # Вертикальные линии и подписи
+    if real_defect_time is not None:
+        plt.axvline(real_defect_time, color='green', linestyle='--', linewidth=2, label='Реальный дефект')
+        plt.annotate(f'Реальный дефект\n{real_defect_time:.2f} c',
+                     xy=(real_defect_time, 1), xycoords='data',
+                     xytext=(-60, 25), textcoords='offset points',
+                     arrowprops=dict(arrowstyle="->", color='green'),
+                     fontsize=11, color='green', ha='right', va='bottom',
+                     bbox=dict(boxstyle='round,pad=0.2', fc='white', ec='green', alpha=0.7))
+    if pred_defect_time is not None:
+        plt.axvline(pred_defect_time, color='red', linestyle='--', linewidth=2, label='Предсказанный дефект')
+        plt.annotate(f'Предсказанный дефект\n{pred_defect_time:.2f} c',
+                     xy=(pred_defect_time, 1), xycoords='data',
+                     xytext=(20, 25), textcoords='offset points',
+                     arrowprops=dict(arrowstyle="->", color='red'),
+                     fontsize=11, color='red', ha='left', va='bottom',
+                     bbox=dict(boxstyle='round,pad=0.2', fc='white', ec='red', alpha=0.7))
+        if real_defect_time is not None:
+            time_error = pred_defect_time - real_defect_time
+            plt.text(pred_defect_time, 1.12, f'Ошибка: {time_error:.2f} c', color='red', fontsize=12, va='bottom', ha='center')
+    else:
+        plt.text(full_time[-1], 1.12, 'Дефект не обнаружен моделью', color='red', fontsize=12, va='bottom', ha='right')
+
+    # Метрики
+    from sklearn.metrics import accuracy_score, roc_curve, auc
+    acc = accuracy_score(real_defect, pred)
+    fpr, tpr, _ = roc_curve(real_defect, proba)
+    roc_auc = auc(fpr, tpr)
+    plt.title(f"{file}\nAUC: {roc_auc:.3f}, Accuracy: {acc:.3f}", fontsize=14)
+    plt.xlabel('Время')
+    plt.ylabel('Метка дефекта')
+    plt.ylim(-0.1, 1.25)
+    plt.legend(loc='upper right')
+    plt.tight_layout()
+    compare_path = os.path.join(OUTPUT_FOLDER, f'compare_defect_{os.path.splitext(file)[0]}.png')
+    plt.savefig(compare_path)
+    plt.close()
+    print(f"График сравнения меток дефекта сохранён: {compare_path}")
 
 print("\nОбработка всех файлов завершена. Результаты в", OUTPUT_FOLDER)
