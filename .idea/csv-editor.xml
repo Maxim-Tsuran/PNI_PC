@@ -10,6 +10,27 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\processed\U_PD4_with_defect_mean_amplitude_defect_processed.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\processed\combined_lama_pipeline_5_tasks__20251216T132955__manual__2025-12-16T13_29_55_00_00_processed.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\processed\train_lama_pipeline_5_tasks__20251216T135706__manual__2025-12-16T13_57_06_00_00_processed.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
       </map>
     </option>
   </component>
